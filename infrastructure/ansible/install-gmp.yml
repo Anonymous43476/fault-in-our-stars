@@ -1,0 +1,50 @@
+- name: Install GMP from source
+  hosts: benchmark_server
+  vars:
+    source_url: "https://gmplib.org/download/gmp/gmp-6.3.0.tar.xz"
+    source_checksum: "sha256:a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
+    build_dir: "/home/ubuntu/build-gmp/"
+    extracted_dir: "gmp-6.3.0"
+  tasks:
+    - name: Create build directory
+      file:
+        path: "{{ build_dir }}"
+        state: directory
+        mode: '0755'
+    - name: Download source code
+      get_url:
+        url: "{{ source_url }}"
+        dest: "{{ build_dir }}/src.tar.gz"
+        checksum: "{{ source_checksum }}"
+        mode: '0644'
+      register: download_result
+    
+    - name: Extract archive
+      unarchive:
+        src: "{{ build_dir }}/src.tar.gz"
+        dest: "{{ build_dir }}"
+        remote_src: yes
+        creates: "{{ build_dir }}/{{ extracted_dir }}"
+      when: download_result.changed
+
+    - name: Run configure script
+      command:
+        cmd: ./configure
+        chdir: "{{ build_dir }}/{{ extracted_dir }}"
+      args:
+        creates: "{{ build_dir }}/{{ extracted_dir }}/Makefile"
+      register: configure_result
+
+    - name: Run make
+      command:
+        cmd: make
+        chdir: "{{ build_dir }}/{{ extracted_dir }}"
+      register: make_result
+      when: configure_result.changed
+
+    - name: Run make install
+      command:
+        cmd: make install
+        chdir: "{{ build_dir }}/{{ extracted_dir }}"
+      when: make_result.changed
+      become: yes

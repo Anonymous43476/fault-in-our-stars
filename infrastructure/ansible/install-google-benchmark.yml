@@ -1,0 +1,55 @@
+- name: Install Google Benchmark from source
+  hosts: benchmark_server
+  become: yes
+
+  vars:
+    benchmark_repo: https://github.com/google/benchmark.git
+    benchmark_dir: /tmp/benchmark
+    build_dir: /tmp/benchmark/build
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - git
+          - cmake
+          - g++
+          - libpthread-stubs0-dev
+        state: present
+        update_cache: yes
+
+    - name: Clone Google Benchmark repository
+      git:
+        repo: "{{ benchmark_repo }}"
+        dest: "{{ benchmark_dir }}"
+        version: main
+        update: yes
+
+    - name: Clone GoogleTest into benchmark
+      git:
+        repo: https://github.com/google/googletest.git
+        dest: "{{ benchmark_dir }}/googletest"
+        version: main
+        update: yes
+
+    - name: Create build directory
+      file:
+        path: "{{ build_dir }}"
+        state: directory
+
+    - name: Run CMake to configure the project
+      command: >
+        cmake -DCMAKE_BUILD_TYPE=Release -DBENCHMARK_DOWNLOAD_DEPENDENCIES=OFF ..
+      args:
+        chdir: "{{ build_dir }}"
+
+    - name: Build the benchmark library
+      command: cmake --build . --config Release
+      args:
+        chdir: "{{ build_dir }}"
+
+    - name: Install the benchmark library
+      command: cmake --install .
+      args:
+        chdir: "{{ build_dir }}"
+

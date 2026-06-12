@@ -1,0 +1,25 @@
+- name: Install packages
+  hosts: benchmark_server
+  tasks:
+    - name: Install build packages
+      ansible.builtin.apt:
+        update_cache: yes
+        pkg:
+          - cmake
+          - build-essential
+          - m4
+          - libboost-all-dev
+          - libbenchmark-dev
+          - libssl-dev
+      become: yes
+    - name: Install awscli
+      community.general.snap:
+        name: "aws-cli"
+        classic: yes
+      become: yes
+
+- import_playbook: install-google-benchmark.yml
+
+- import_playbook: install-gmp.yml
+- import_playbook: install-ntl.yml
+
